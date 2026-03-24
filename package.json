@@ -2,6 +2,11 @@
   "name": "@joeyguerra/rdbljs",
   "module": "index.js",
   "type": "module",
+  "files": [
+    "src/",
+    "index.js",
+    "README.md"
+  ],
   "scripts": {
     "docs": "bun run bin/build.js",
     "docs:serve": "bun run bin/build.js && bunx serve dist"
@@ -11,5 +16,6 @@
   },
   "peerDependencies": {
     "typescript": "^5"
-  }
+  },
+  "license": "MIT"
 }
