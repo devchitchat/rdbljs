@@ -100,8 +100,8 @@
         <button cls="todayTabCls" onclick="showToday">
           Today <span class="badge" text="activeCount"></span>
         </button>
-        <button cls="yesterdayTabCls" onclick="showYesterday">
-          Yesterday <span class="badge" text="completedCount"></span>
+        <button cls="yesterdayTabCls" onclick="showCompleted">
+          Completed <span class="badge" text="completedCount"></span>
         </button>
       </div>
 
@@ -222,7 +222,7 @@ bind(document.querySelector('#todo-app'), {
   toggleTodo,
   removeTodo,
   showToday:     () => view.set('today'),
-  showYesterday: () => view.set('yesterday'),
+  showCompleted: () => view.set('completed'),
 })
 
 // Submit on Enter
@@ -251,7 +251,7 @@ document.querySelector('#todo-app input[model]')
   &lt;button <span class="attr">cls</span>="<span class="val">todayTabCls</span>"     <span class="attr">onclick</span>="<span class="val">showToday</span>"&gt;
     Today &lt;span <span class="attr">text</span>="<span class="val">activeCount</span>"&gt;&lt;/span&gt;
   &lt;/button&gt;
-  &lt;button <span class="attr">cls</span>="<span class="val">yesterdayTabCls</span>" <span class="attr">onclick</span>="<span class="val">showYesterday</span>"&gt;
+  &lt;button <span class="attr">cls</span>="<span class="val">yesterdayTabCls</span>" <span class="attr">onclick</span>="<span class="val">showCompleted</span>"&gt;
     Yesterday &lt;span <span class="attr">text</span>="<span class="val">completedCount</span>"&gt;&lt;/span&gt;
   &lt;/button&gt;
 
@@ -350,7 +350,7 @@ bind(document.querySelector(<span class="str">'#todo-app'</span>), {
   isToday, todayTabCls, yesterdayTabCls, summary,
   addTodo, toggleTodo, removeTodo,
   showToday:     () =&gt; view.set(<span class="str">'today'</span>),
-  showYesterday: () =&gt; view.set(<span class="str">'yesterday'</span>),
+  showCompleted: () =&gt; view.set(<span class="str">'completed'</span>),
 })</code></pre>
   </div>
 
@@ -379,7 +379,7 @@ item.actionLabel <span class="com">// 'COMPLETE' | 'RESTORE'</span>
 
 <span class="com">// Handlers</span>
 addTodo, toggleTodo, removeTodo
-showToday, showYesterday</code></pre>
+showToday, showCompleted</code></pre>
   </div>
 </div>
 

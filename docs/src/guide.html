@@ -319,6 +319,17 @@ Context.provide(document.body, { pageState })
   On first run, effects write the same values the server already rendered — the DOM doesn't flicker.
 </p>
 
+<h3>Server Side Rendered Template</h3>
+<p>{{greeting}} is interpolated and the client side code binds after it renders.</p>
+<pre>
+  <code>
+    <span class="com">&lt;!-- Server renders with template engine --&gt;</span>
+    &lt;div id="app" island="/components/Dashboard.js"&gt;
+    &lt;h1 <span class="attr">text</span>="<span class="val">greeting</span>"&gt;{{greeting}}&lt;/h1&gt;
+    &lt;/div&gt;</code></pre>
+  </code>
+</pre>
+
 <h3>Embedded JSON in a script tag</h3>
 <pre><code><span class="com">&lt;!-- Server renders this --&gt;</span>
 &lt;script type="application/json" id="page-data"&gt;

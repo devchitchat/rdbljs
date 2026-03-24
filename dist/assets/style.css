@@ -32,6 +32,15 @@
   --font:        'Space Mono', 'Courier New', Courier, monospace;
   --sidebar-w:   260px;
   --header-h:    56px;
+
+  /* Glass */
+  --glass-header:  rgba(8, 11, 8, 0.72);
+  --glass-sidebar: rgba(10, 14, 10, 0.80);
+  --glass-panel:   rgba(13, 17, 13, 0.60);
+  --glass-deep:    rgba(10, 14, 10, 0.75);
+  --glass-border:  rgba(42, 60, 42, 0.35);
+  --glass-blur:    blur(18px) saturate(160%);
+  --glass-blur-sm: blur(10px) saturate(140%);
 }
 
 /* ── Reset ── */
@@ -43,7 +52,13 @@ html {
 
 /* ── Base ── */
 body {
-  background: var(--bg);
+  background:
+    radial-gradient(ellipse 60% 40% at 15% 10%,  rgba(255, 176,   0, 0.055) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 50% at 85% 80%,  rgba( 51, 255, 102, 0.040) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 60% at 80% 10%,  rgba( 68, 170, 255, 0.025) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 40% at 30% 90%,  rgba(255, 176,   0, 0.020) 0%, transparent 50%),
+    var(--bg);
+  background-attachment: fixed;
   color: var(--text);
   font-family: var(--font);
   font-size: 1rem;
@@ -104,8 +119,10 @@ body::after {
   top: 0;
   z-index: 200;
   height: var(--header-h);
-  background: var(--bg2);
-  border-bottom: 1px solid var(--border2);
+  background: var(--glass-header);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--glass-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -209,8 +226,10 @@ body::after {
 
 /* ── Sidebar ── */
 .sidebar {
-  background: var(--bg2);
-  border-right: 1px solid var(--border2);
+  background: var(--glass-sidebar);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-right: 1px solid var(--glass-border);
   position: sticky;
   top: var(--header-h);
   height: calc(100vh - var(--header-h));
@@ -258,8 +277,10 @@ body::after {
 /* ── Footer ── */
 .site-footer {
   grid-column: 1 / -1;
-  background: var(--bg2);
-  border-top: 1px solid var(--border2);
+  background: var(--glass-header);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-top: 1px solid var(--glass-border);
   padding: 16px 24px;
   display: flex;
   justify-content: space-between;
@@ -322,8 +343,10 @@ em { color: var(--amber-dim); font-style: normal; }
 
 /* ── Code ── */
 pre {
-  background: var(--bg3);
-  border: 1px solid var(--border2);
+  background: var(--glass-deep);
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
+  border: 1px solid var(--glass-border);
   border-left: 3px solid var(--green-dim);
   padding: 20px 20px 20px 24px;
   overflow-x: auto;
@@ -867,7 +890,25 @@ tr:hover td { background: var(--bg2); }
 }
 .readout-value { color: var(--green); font-size: 0.94rem; text-shadow: var(--glow-green); }
 .counter-controls { display: flex; justify-content: center; gap: 12px; }
-.counter-controls button { width: 48px; height: 48px; padding: 0; font-size: 1.18rem; }
+.counter-controls button {
+  width: 123px;
+  height: 48px;
+  padding: 1rem;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+button.left {
+  border-top-left-radius: 200%;
+  border-bottom-left-radius: 10%;
+}
+
+button.right {
+  border-top-right-radius: 200%;
+  border-bottom-right-radius: 10%;
+}
 
 /* ── Callouts ── */
 .callout {

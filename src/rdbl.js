@@ -815,6 +815,27 @@ function bindEach(root, scope, opt, { getCtx, bindSubtree }) {
   }
 }
 
+async function init(window, roots) {
+  if (!roots) {
+    roots = [...document.querySelectorAll('[island]')]
+  }
+  
+  const instances = {}
+  let i = 0
+
+  for await (const root of roots) {
+    const key = root.getAttribute('island')
+    try {
+      const scopeFactory = (await import(key)).default
+      const scope = scopeFactory(root, window)
+      instances[`${key}:${i++}`] = bind(root, scope, { dev: true })
+    } catch (err) {
+      console.error(`Failed to load island "${key}":`, err)
+    }
+  }
+  return instances
+}
+
 /* ─────────────────────────────────────────────────────────────
 Usage sketch:
 
