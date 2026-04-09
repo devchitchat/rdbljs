@@ -1,4 +1,4 @@
-import { bind, signal, computed } from 'assets/rdbl.js'
+const { bind, signal, computed } = await import(new URL('./rdbl.js', import.meta.url).href)
 const query  = signal('')
 const length = computed(() => query().length)
 const root   = document.querySelector('#model-demo')

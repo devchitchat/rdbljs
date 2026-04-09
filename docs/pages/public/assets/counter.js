@@ -1,4 +1,4 @@
-import { bind, signal, computed, effect } from 'assets/rdbl.js'
+const { bind, signal, computed, effect } = await import(new URL('./rdbl.js', import.meta.url).href)
 
 const count = signal(0)
 const log   = document.getElementById('effect-log')

@@ -1,4 +1,4 @@
-import { bind, signal, computed, effect, getItemContext } from 'assets/rdbl.js'
+const { bind, signal, computed, effect, getItemContext } = await import(new URL('./rdbl.js', import.meta.url).href)
 
 // ── Helpers ─────────────────────────────────────────────────
 function makeTodo(text, done = false) {
