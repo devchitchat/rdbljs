@@ -815,7 +815,7 @@ function bindEach(root, scope, opt, { getCtx, bindSubtree }) {
   }
 }
 
-async function init(window, roots) {
+export async function init(window, roots) {
   if (!roots) {
     roots = [...document.querySelectorAll('[island]')]
   }
