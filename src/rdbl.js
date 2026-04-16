@@ -658,6 +658,11 @@ function bindEach(root, scope, opt, { getCtx, bindSubtree }) {
   for (const host of allElements(root)) {
     if (shouldIgnore(host, opt.ignoreSelector)) continue
     if (!host.hasAttribute('each')) continue
+    // A preceding each with data-ssr may have already removed SSR rows from the
+    // DOM synchronously (the effect runs immediately). Skip hosts that are no
+    // longer contained within root so we don't warn about missing <template> on
+    // SSR-rendered inner each elements that have already been replaced.
+    if (!root.contains(host)) continue
 
     const listPath = host.getAttribute('each')
     const keyPath = host.getAttribute('key') || 'id'
