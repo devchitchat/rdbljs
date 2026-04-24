@@ -178,6 +178,32 @@ const ROUTES = {
     window.__addItem = () => scope.items.set([...scope.items(), { id: 3, name: 'Gamma' }])`
   ),
 
+  // Nested each with no <template> at either level — clearNodeForTemplate must
+  // synthesize a <template> for the inner each host so new outer items can render
+  // their inner lists without warnings or blank content.
+  '/ssr-nested-no-template': makePage(
+    `<div id="root" each="hubs" key="hub_id">
+      <div data-key="1">
+        <h1 text="name" class="hub-name">Dev Hub</h1>
+        <ul each="channels" key="channel_id">
+          <li data-key="1" text="name" class="channel-link">general</li>
+        </ul>
+      </div>
+    </div>`,
+    `const hubs = signal([{
+      hub_id: 1, name: 'Dev Hub',
+      channels: [{ channel_id: 1, name: 'general' }]
+    }])
+    const scope = { hubs }
+    bind(document.getElementById('root'), scope, { dev: true })
+    window.__getHubNames    = () => JSON.stringify([...document.querySelectorAll('.hub-name')].map(e => e.textContent))
+    window.__getChannelNames = () => JSON.stringify([...document.querySelectorAll('.channel-link')].map(e => e.textContent))
+    window.__addHub = () => hubs.set([...hubs(), {
+      hub_id: 2, name: 'Design Hub',
+      channels: [{ channel_id: 2, name: 'announcements' }]
+    }])`
+  ),
+
   '/missing-inner-template': makePage(
     `<div each="hubs" key="hub_id">
       <template>
@@ -589,6 +615,31 @@ describe('each — trailing non-data-key element used as template', () => {
       await wv.evaluate('window.__addItem()')
       await flush(wv)
       expect(JSON.parse(await wv.evaluate('window.__itemTexts()'))).toEqual(['Alpha', 'Beta', 'Gamma'])
+    })
+  )
+})
+
+describe('nested each — no template at any level (SSR synthesizes inner template)', () => {
+  test('SSR content preserved on bind',
+    withPage('/ssr-nested-no-template', async wv => {
+      expect(JSON.parse(await wv.evaluate('window.__getHubNames()'))).toEqual(['Dev Hub'])
+      expect(JSON.parse(await wv.evaluate('window.__getChannelNames()'))).toEqual(['general'])
+    })
+  )
+
+  test('no warnings on bind',
+    withPage('/ssr-nested-no-template', async wv => {
+      expect(await warnings(wv)).toEqual([])
+    })
+  )
+
+  test('new hub with channels renders correctly without warnings',
+    withPage('/ssr-nested-no-template', async wv => {
+      await wv.evaluate('window.__addHub()')
+      await flush(wv)
+      expect(await warnings(wv)).toEqual([])
+      expect(JSON.parse(await wv.evaluate('window.__getHubNames()'))).toEqual(['Dev Hub', 'Design Hub'])
+      expect(JSON.parse(await wv.evaluate('window.__getChannelNames()'))).toEqual(['general', 'announcements'])
     })
   )
 })

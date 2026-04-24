@@ -720,6 +720,22 @@ function clearNodeForTemplate(el) {
     for (const [name] of parseAttrSpec(el.getAttribute('attr'))) el.removeAttribute(name)
   }
   if (el.hasAttribute('each')) {
+    // If there are SSR data-key rows but no explicit <template>, synthesize one
+    // from the first SSR row (clone + clear) before removing the rows — so that
+    // bindEach can render new items into this nested host without warning.
+    const existingTpl = Array.from(el.children).find(c => c.tagName === 'TEMPLATE')
+    if (!existingTpl) {
+      const { groups } = collectDataKeyGroups(el, null)
+      if (groups.length > 0) {
+        const tpl = document.createElement('template')
+        groups[0].nodes.forEach(n => {
+          const clone = n.cloneNode(true)
+          clearNodeForTemplate(clone)
+          tpl.content.appendChild(clone)
+        })
+        el.appendChild(tpl)
+      }
+    }
     // Remove SSR rows from nested each hosts; keep trailing (template) rows.
     for (const child of Array.from(el.children)) {
       if (child.hasAttribute('data-key')) child.remove()
@@ -803,15 +819,20 @@ export function bindEach(root, scope, opt, { getCtx, bindSubtree }) {
     // holds the SSR nodes temporarily so bindSubtree can scan them.
     function makeEntry(tmp, item, index) {
       let currentItem = item
-      const itemScope = createScope(scope, { $item: item, $index: index })
-      const proxyScope = new Proxy(itemScope, {
+      const patch = { $item: item, $index: index }
+      const itemScope = createScope(scope, patch)
+      // Use `patch` (not `itemScope`) as the proxy target so that `prop in target`
+      // only returns true for the two explicit fields ($item/$index).  This prevents
+      // parent-scope properties (e.g. a hub's `name`) from shadowing the current
+      // item's own properties with the same name in nested each lists.
+      const proxyScope = new Proxy(patch, {
         get(target, prop) {
           if (prop in target) return target[prop]
           if (currentItem && typeof currentItem === 'object' && prop in currentItem) return currentItem[prop]
-          return scope[prop]
+          return itemScope[prop]
         },
         has(target, prop) {
-          return (prop in target) || (currentItem && typeof currentItem === 'object' && prop in currentItem) || (prop in scope)
+          return (prop in target) || (currentItem && typeof currentItem === 'object' && prop in currentItem) || (prop in itemScope)
         }
       })
 
