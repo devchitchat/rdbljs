@@ -299,8 +299,6 @@ export function createScope(parent, patch) {
 // ─────────────────────────────────────────────────────────────
 const DEFAULTS = {
   dev: true,
-  autoBind: false,           // MutationObserver auto-bind
-  observeRoot: false,        // if true, observes root itself too (rarely needed)
   ignoreSelector: '[data-no-bind]', // subtree opt-out marker
 }
 
@@ -313,14 +311,6 @@ function shouldIgnore(el, ignoreSelector) {
 function isManagedByEach(el) {
   const eachHost = el?.closest?.('[each]')
   return !!(eachHost && !el.hasAttribute('each'))
-}
-
-function collectRootsForAutoBind(node, ignoreSelector) {
-  const roots = []
-  if (!(node instanceof Element)) return roots
-  if (!shouldIgnore(node, ignoreSelector)) roots.push(node)
-  node.querySelectorAll?.(':scope *')?.forEach?.(() => {}) // noop; avoid older engines? (safe)
-  return roots
 }
 
 // Return list of "binding elements" under root, including root
@@ -346,7 +336,7 @@ function parseAttrSpec(spec) {
     .map(s => s.trim())
     .filter(Boolean)
     .map(pair => pair.split(':').map(x => x.trim()))
-    .filter(([a,b]) => a && b)
+    .filter(([a, b]) => a && b)
 }
 
 function isDialogElement(el) {
@@ -393,7 +383,6 @@ export function bind(root, scope, options = {}) {
     // - bindEach first so it renders children, then bind the rest for that root
     disposers.push(bindEach(r, scope, opt, { getCtx, bindSubtree }))
     disposers.push(bindText(r, scope, opt))
-    disposers.push(bindHtml(r, scope, opt))
     disposers.push(bindShow(r, scope, opt))
     disposers.push(bindClass(r, scope, opt))
     disposers.push(bindAttr(r, scope, opt))
@@ -403,38 +392,32 @@ export function bind(root, scope, options = {}) {
 
   function bindSubtree(subRoot, subScope = scope) {
     // Scoped sub-bind: same binder but with different scope
-    // Note: not wired into autoBind automatically unless you call it
-    return bind(subRoot, subScope, { ...opt, autoBind: false })
+    return bind(subRoot, subScope, opt)
   }
 
   // Initial bind
   bindRootOnce(root)
 
-  // MutationObserver auto-bind (opt-in)
-  let observerDispose = null
-  if (opt.autoBind) {
-    const obsRoot = opt.observeRoot ? root : root
-    const mo = new MutationObserver((mutations) => {
-      for (const m of mutations) {
-        for (const n of m.addedNodes) {
-          if (!(n instanceof Element)) continue
-          if (shouldIgnore(n, opt.ignoreSelector)) continue
-          // Bind the added subtree root once (binder scans its descendants)
-          bindRootOnce(n)
-        }
+  const mo = new MutationObserver((mutations) => {
+    for (const m of mutations) {
+      for (const n of m.addedNodes) {
+        if (!(n instanceof Element)) continue
+        if (shouldIgnore(n, opt.ignoreSelector)) continue
+        if (root.hasAttribute('island') && n.closest('[island]') !== root) continue
+        if (isManagedByEach(n)) continue
+        bindRootOnce(n)
       }
-    })
-    mo.observe(obsRoot, { childList: true, subtree: true })
-    observerDispose = () => mo.disconnect()
-  }
+    }
+  })
+  mo.observe(root, { childList: true, subtree: true })
 
   return {
     bindSubtree,
     dispose() {
-      if (observerDispose) observerDispose()
+      mo.disconnect()
       // dispose in reverse (best-effort)
       for (let i = disposers.length - 1; i >= 0; i--) {
-        try { disposers[i]?.dispose?.() } catch {}
+        try { disposers[i]?.dispose?.() } catch { }
       }
     }
   }
@@ -453,30 +436,10 @@ function bindText(root, scope, opt) {
     let skipFirst = isSSRPreserved(el) || el.textContent.trim() !== ''
 
     const stop = effect(() => {
-      const v = readValue(scope, path)
       const value = readBoundValue(scope, path, el)
       if (value === undefined) warn(opt.dev, `text="${path}" resolved to undefined${bindingDebugContext(el)}`)
       if (skipFirst) { skipFirst = false; return }
       el.textContent = value ?? ''
-    })
-    stops.push(stop)
-  }
-  return { dispose: () => stops.forEach(s => s()) }
-}
-
-function bindHtml(root, scope, opt) {
-  const stops = []
-  for (const el of allElements(root)) {
-    if (shouldIgnore(el, opt.ignoreSelector)) continue
-    if (isManagedByEach(el)) continue
-    if (!el.hasAttribute('html')) continue
-    const path = el.getAttribute('html')
-    let skipFirst = isSSRPreserved(el) || el.innerHTML.trim() !== ''
-
-    const stop = effect(() => {
-      const v = readBoundValue(scope, path, el)
-      if (skipFirst) { skipFirst = false; return }
-      el.innerHTML = v ?? ''
     })
     stops.push(stop)
   }
@@ -579,8 +542,8 @@ function bindModel(root, scope, opt) {
     // UI -> state
     const evt =
       (el instanceof HTMLSelectElement) ? 'change'
-      : (el instanceof HTMLInputElement && el.type === 'checkbox') ? 'change'
-      : 'input'
+        : (el instanceof HTMLInputElement && el.type === 'checkbox') ? 'change'
+          : 'input'
 
     const handler = () => sig.set(getModelValue(el))
     el.addEventListener(evt, handler)
@@ -619,7 +582,7 @@ function bindEvents(root, scope, opt, { getCtx }) {
       const actionPath = attr.value.trim()
 
       // Disable native inline handler evaluation
-      try { el[attr.name] = null } catch {}
+      try { el[attr.name] = null } catch { }
       el.removeAttribute(attr.name)
 
       const handler = (event) => {
@@ -746,7 +709,6 @@ function clearNodeForTemplate(el) {
   if (!(el instanceof Element)) return
   el.removeAttribute('data-key')
   if (el.hasAttribute('text')) el.textContent = ''
-  if (el.hasAttribute('html')) el.innerHTML = ''
   if (el.hasAttribute('attr')) {
     for (const [name] of parseAttrSpec(el.getAttribute('attr'))) el.removeAttribute(name)
   }
@@ -970,7 +932,7 @@ export function bindEach(root, scope, opt, { getCtx, bindSubtree }) {
           // If keyed item identity changed, recreate subtree bindings so
           // non-reactive plain item fields are read from the new object.
           if (entry.item !== item) {
-            try { entry.binding?.dispose?.() } catch {}
+            try { entry.binding?.dispose?.() } catch { }
             for (const n of entry.nodes) n.remove()
             entry = createEntry(item, i)
           } else {
@@ -994,7 +956,7 @@ export function bindEach(root, scope, opt, { getCtx, bindSubtree }) {
       // Dispose removed
       for (const [k, entry] of live.entries()) {
         if (!next.has(k)) {
-          try { entry.binding?.dispose?.() } catch {}
+          try { entry.binding?.dispose?.() } catch { }
           for (const n of entry.nodes) n.remove()
         }
       }
@@ -1006,7 +968,7 @@ export function bindEach(root, scope, opt, { getCtx, bindSubtree }) {
     listDisposers.push(() => {
       stop()
       for (const entry of live.values()) {
-        try { entry.binding?.dispose?.() } catch {}
+        try { entry.binding?.dispose?.() } catch { }
         for (const n of entry.nodes) n.remove()
       }
       live.clear()
@@ -1025,7 +987,7 @@ export async function init(window, roots) {
   if (!roots) {
     roots = [...document.querySelectorAll('[island]')]
   }
-  
+
   const instances = {}
   let i = 0
 
@@ -1077,7 +1039,7 @@ const state = {
 
 state.double = computed(() => state.count() * 2)
 
-const app = bind(root, state, { dev: true, autoBind: true })
+const app = bind(root, state, { dev: true })
 
 // later: app.dispose()
 ──────────────────────────────────────────────────────────── */
