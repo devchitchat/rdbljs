@@ -71,7 +71,7 @@ const ROUTES = {
     const scope = { hubs }
     try {
       bindEach(root, scope, {dev: true}, { getCtx: (el) => Context.read(el),  bindSubtree: (subRoot, subScope = scope) => {
-        return bind(subRoot, subScope, { dev: true, autoBind: false })
+        return bind(subRoot, subScope, { dev: true })
       }})
     } catch(e) {
       console.log('error', e.message)
